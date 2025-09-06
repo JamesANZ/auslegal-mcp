@@ -8,29 +8,65 @@ import {
   LegalDatabase,
   AUSTRALIAN_JURISDICTIONS,
 } from "./types.js";
-import superagent from "superagent";
 import puppeteer from "puppeteer";
 import {
   AUSTLII_BASE,
-  AUSTLII_API_BASE,
+  AUSTLII_SEARCH_BASE,
   FEDERAL_LEGISLATION_BASE,
+  FEDERAL_LEGISLATION_SEARCH,
   HIGH_COURT_BASE,
+  HIGH_COURT_SEARCH,
   FEDERAL_COURT_BASE,
   NSW_LEGISLATION_BASE,
+  NSW_LEGISLATION_SEARCH,
   VIC_LEGISLATION_BASE,
+  VIC_LEGISLATION_SEARCH,
   QLD_LEGISLATION_BASE,
+  QLD_LEGISLATION_SEARCH,
   WA_LEGISLATION_BASE,
+  WA_LEGISLATION_SEARCH,
   SA_LEGISLATION_BASE,
+  SA_LEGISLATION_SEARCH,
   TAS_LEGISLATION_BASE,
+  TAS_LEGISLATION_SEARCH,
   NT_LEGISLATION_BASE,
+  NT_LEGISLATION_SEARCH,
   ACT_LEGISLATION_BASE,
+  ACT_LEGISLATION_SEARCH,
   USER_AGENT,
+  SCRAPING_CONFIG,
+  SELECTORS,
 } from "./constants.js";
 
 // Utility function to add random delay to avoid rate limiting
-function randomDelay(min: number, max: number): Promise<void> {
-  const delay = Math.random() * (max - min) + min;
+function randomDelay(): Promise<void> {
+  const delay =
+    Math.random() *
+      (SCRAPING_CONFIG.RANDOM_DELAY_MAX - SCRAPING_CONFIG.RANDOM_DELAY_MIN) +
+    SCRAPING_CONFIG.RANDOM_DELAY_MIN;
   return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+// Utility function to wait for any of multiple selectors
+async function waitForAnySelector(
+  page: any,
+  selectors: string[],
+  timeout: number = SCRAPING_CONFIG.WAIT_FOR_SELECTOR_TIMEOUT,
+): Promise<string | null> {
+  const promises = selectors.map((selector) =>
+    page
+      .waitForSelector(selector, { timeout })
+      .then(() => selector)
+      .catch(() => null),
+  );
+
+  const results = await Promise.allSettled(promises);
+  const successful = results.find(
+    (result) => result.status === "fulfilled" && result.value !== null,
+  );
+  return successful
+    ? (successful as PromiseFulfilledResult<string>).value
+    : null;
 }
 
 // Search AustLII for legal materials
@@ -41,34 +77,21 @@ export async function searchAustLII(
   limit: number = 20,
 ): Promise<AustLIIResult[]> {
   try {
-    await randomDelay(1000, 3000);
+    await randomDelay();
 
     let browser;
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ],
+        args: [...SCRAPING_CONFIG.BROWSER_ARGS, `--user-agent=${USER_AGENT}`],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: 1920, height: 1080 });
-      await page.setUserAgent(
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      );
+      await page.setViewport(SCRAPING_CONFIG.VIEWPORT);
+      await page.setUserAgent(USER_AGENT);
 
       // Build search URL
-      let searchUrl = `${AUSTLII_BASE}/cgi-bin/sinosrch.cgi?query=${encodeURIComponent(query)}&metaname=all&path=all`;
+      let searchUrl = `${AUSTLII_SEARCH_BASE}?query=${encodeURIComponent(query)}&metaname=all&path=all`;
 
       if (jurisdiction && jurisdiction !== "CTH") {
         searchUrl += `&jurisdiction=${jurisdiction.toLowerCase()}`;
@@ -78,32 +101,41 @@ export async function searchAustLII(
         searchUrl += `&type=${type.toLowerCase().replace(" ", "_")}`;
       }
 
-      await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 30000 });
+      await page.goto(searchUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: SCRAPING_CONFIG.TIMEOUT,
+      });
 
-      // Wait for results
-      await page.waitForSelector(".result", { timeout: 15000 });
+      // Wait for results using multiple selectors
+      const foundSelector = await waitForAnySelector(
+        page,
+        SELECTORS.AUSTLII.results.split(", "),
+      );
+      if (!foundSelector) {
+        return [];
+      }
 
-      return await page.evaluate(() => {
+      return await page.evaluate((selectors) => {
         const results: AustLIIResult[] = [];
-        const resultElements = document.querySelectorAll(".result");
+        const resultElements = document.querySelectorAll(selectors.results);
 
         resultElements.forEach((element) => {
-          const titleElement = element.querySelector("h3 a, .title a");
+          const titleElement = element.querySelector(selectors.title);
           const title = titleElement?.textContent?.trim() || "";
           const url = (titleElement as HTMLAnchorElement)?.href || "";
 
-          const snippetElement = element.querySelector(".snippet, .summary");
+          const snippetElement = element.querySelector(selectors.snippet);
           const snippet = snippetElement?.textContent?.trim() || "";
 
-          const databaseElement = element.querySelector(".database, .source");
+          const databaseElement = element.querySelector(selectors.database);
           const database = databaseElement?.textContent?.trim() || "";
 
           const jurisdictionElement = element.querySelector(
-            ".jurisdiction, .state",
+            selectors.jurisdiction,
           );
           const jurisdiction = jurisdictionElement?.textContent?.trim() || "";
 
-          const dateElement = element.querySelector(".date, .year");
+          const dateElement = element.querySelector(selectors.date);
           const date = dateElement?.textContent?.trim() || "";
 
           if (title && title.length > 5) {
@@ -124,14 +156,13 @@ export async function searchAustLII(
         });
 
         return results;
-      });
+      }, SELECTORS.AUSTLII);
     } finally {
       if (browser) {
         await browser.close();
       }
     }
   } catch (error) {
-    console.error("Error searching AustLII:", error);
     return [];
   }
 }
@@ -142,67 +173,57 @@ export async function searchFederalLegislation(
   limit: number = 20,
 ): Promise<LegislationSearchResult[]> {
   try {
-    await randomDelay(1000, 3000);
+    await randomDelay();
 
     let browser;
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ],
+        args: [...SCRAPING_CONFIG.BROWSER_ARGS, `--user-agent=${USER_AGENT}`],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: 1920, height: 1080 });
-      await page.setUserAgent(
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      );
+      await page.setViewport(SCRAPING_CONFIG.VIEWPORT);
+      await page.setUserAgent(USER_AGENT);
 
-      const searchUrl = `${FEDERAL_LEGISLATION_BASE}/search?q=${encodeURIComponent(query)}`;
-      await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 30000 });
-
-      // Wait for results
-      await page.waitForSelector(".search-result, .result-item", {
-        timeout: 15000,
+      const searchUrl = `${FEDERAL_LEGISLATION_SEARCH}?q=${encodeURIComponent(query)}`;
+      await page.goto(searchUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: SCRAPING_CONFIG.TIMEOUT,
       });
 
-      return await page.evaluate(() => {
+      // Wait for results using multiple selectors
+      const foundSelector = await waitForAnySelector(
+        page,
+        SELECTORS.FEDERAL_LEGISLATION.results.split(", "),
+      );
+      if (!foundSelector) {
+        return [];
+      }
+
+      return await page.evaluate((selectors) => {
         const results: LegislationSearchResult[] = [];
-        const resultElements = document.querySelectorAll(
-          ".search-result, .result-item",
-        );
+        const resultElements = document.querySelectorAll(selectors.results);
 
         resultElements.forEach((element) => {
-          const titleElement = element.querySelector("h3 a, .title a, .name a");
+          const titleElement = element.querySelector(selectors.title);
           const title = titleElement?.textContent?.trim() || "";
           const url = (titleElement as HTMLAnchorElement)?.href || "";
 
-          const actNumberElement = element.querySelector(
-            ".act-number, .number",
-          );
+          const actNumberElement = element.querySelector(selectors.actNumber);
           const actNumber = actNumberElement?.textContent?.trim() || "";
 
-          const yearElement = element.querySelector(".year, .date");
+          const yearElement = element.querySelector(selectors.year);
           const yearText = yearElement?.textContent?.trim() || "";
           const year = yearText
             ? parseInt(yearText.match(/\d{4}/)?.[0] || "")
             : undefined;
 
-          const statusElement = element.querySelector(".status, .state");
+          const statusElement = element.querySelector(selectors.status);
           const status = statusElement?.textContent?.trim() || "";
 
           const descriptionElement = element.querySelector(
-            ".description, .summary",
+            selectors.description,
           );
           const description = descriptionElement?.textContent?.trim() || "";
 
@@ -220,14 +241,13 @@ export async function searchFederalLegislation(
         });
 
         return results.slice(0, limit);
-      });
+      }, SELECTORS.FEDERAL_LEGISLATION);
     } finally {
       if (browser) {
         await browser.close();
       }
     }
   } catch (error) {
-    console.error("Error searching Federal Legislation:", error);
     return [];
   }
 }
@@ -238,61 +258,53 @@ export async function searchNSWLegislation(
   limit: number = 20,
 ): Promise<LegislationSearchResult[]> {
   try {
-    await randomDelay(1000, 3000);
+    await randomDelay();
 
     let browser;
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ],
+        args: [...SCRAPING_CONFIG.BROWSER_ARGS, `--user-agent=${USER_AGENT}`],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: 1920, height: 1080 });
-      await page.setUserAgent(
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      await page.setViewport(SCRAPING_CONFIG.VIEWPORT);
+      await page.setUserAgent(USER_AGENT);
+
+      const searchUrl = `${NSW_LEGISLATION_SEARCH}?q=${encodeURIComponent(query)}`;
+      await page.goto(searchUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: SCRAPING_CONFIG.TIMEOUT,
+      });
+
+      // Wait for results using multiple selectors
+      const foundSelector = await waitForAnySelector(
+        page,
+        SELECTORS.NSW_LEGISLATION.results.split(", "),
       );
+      if (!foundSelector) {
+        return [];
+      }
 
-      const searchUrl = `${NSW_LEGISLATION_BASE}/search?q=${encodeURIComponent(query)}`;
-      await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 30000 });
-
-      // Wait for results
-      await page.waitForSelector(".search-result, .result", { timeout: 15000 });
-
-      return await page.evaluate(() => {
+      return await page.evaluate((selectors) => {
         const results: LegislationSearchResult[] = [];
-        const resultElements = document.querySelectorAll(
-          ".search-result, .result",
-        );
+        const resultElements = document.querySelectorAll(selectors.results);
 
         resultElements.forEach((element) => {
-          const titleElement = element.querySelector("h3 a, .title a, .name a");
+          const titleElement = element.querySelector(selectors.title);
           const title = titleElement?.textContent?.trim() || "";
           const url = (titleElement as HTMLAnchorElement)?.href || "";
 
-          const actNumberElement = element.querySelector(
-            ".act-number, .number",
-          );
+          const actNumberElement = element.querySelector(selectors.actNumber);
           const actNumber = actNumberElement?.textContent?.trim() || "";
 
-          const yearElement = element.querySelector(".year, .date");
+          const yearElement = element.querySelector(selectors.year);
           const yearText = yearElement?.textContent?.trim() || "";
           const year = yearText
             ? parseInt(yearText.match(/\d{4}/)?.[0] || "")
             : undefined;
 
-          const statusElement = element.querySelector(".status, .state");
+          const statusElement = element.querySelector(selectors.status);
           const status = statusElement?.textContent?.trim() || "";
 
           if (title && title.length > 5) {
@@ -308,14 +320,13 @@ export async function searchNSWLegislation(
         });
 
         return results.slice(0, limit);
-      });
+      }, SELECTORS.NSW_LEGISLATION);
     } finally {
       if (browser) {
         await browser.close();
       }
     }
   } catch (error) {
-    console.error("Error searching NSW Legislation:", error);
     return [];
   }
 }
@@ -326,69 +337,57 @@ export async function searchHighCourtCases(
   limit: number = 20,
 ): Promise<CaseLawSearchResult[]> {
   try {
-    await randomDelay(1000, 3000);
+    await randomDelay();
 
     let browser;
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        ],
+        args: [...SCRAPING_CONFIG.BROWSER_ARGS, `--user-agent=${USER_AGENT}`],
       });
 
       const page = await browser.newPage();
-      await page.setViewport({ width: 1920, height: 1080 });
-      await page.setUserAgent(
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      );
+      await page.setViewport(SCRAPING_CONFIG.VIEWPORT);
+      await page.setUserAgent(USER_AGENT);
 
-      const searchUrl = `${HIGH_COURT_BASE}/search?q=${encodeURIComponent(query)}`;
-      await page.goto(searchUrl, { waitUntil: "networkidle2", timeout: 30000 });
-
-      // Wait for results
-      await page.waitForSelector(".search-result, .case-result", {
-        timeout: 15000,
+      const searchUrl = `${HIGH_COURT_SEARCH}?q=${encodeURIComponent(query)}`;
+      await page.goto(searchUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: SCRAPING_CONFIG.TIMEOUT,
       });
 
-      return await page.evaluate(() => {
+      // Wait for results using multiple selectors
+      const foundSelector = await waitForAnySelector(
+        page,
+        SELECTORS.HIGH_COURT.results.split(", "),
+      );
+      if (!foundSelector) {
+        return [];
+      }
+
+      return await page.evaluate((selectors) => {
         const results: CaseLawSearchResult[] = [];
-        const resultElements = document.querySelectorAll(
-          ".search-result, .case-result",
-        );
+        const resultElements = document.querySelectorAll(selectors.results);
 
         resultElements.forEach((element) => {
-          const titleElement = element.querySelector(
-            "h3 a, .title a, .case-name a",
-          );
+          const titleElement = element.querySelector(selectors.title);
           const caseName = titleElement?.textContent?.trim() || "";
           const url = (titleElement as HTMLAnchorElement)?.href || "";
 
-          const citationElement = element.querySelector(".citation, .cite");
+          const citationElement = element.querySelector(selectors.citation);
           const citation = citationElement?.textContent?.trim() || "";
 
-          const dateElement = element.querySelector(".date, .decision-date");
+          const dateElement = element.querySelector(selectors.date);
           const decisionDate = dateElement?.textContent?.trim() || "";
 
-          const catchwordsElement = element.querySelector(
-            ".catchwords, .keywords",
-          );
+          const catchwordsElement = element.querySelector(selectors.catchwords);
           const catchwords =
             catchwordsElement?.textContent
               ?.trim()
               .split(",")
               .map((s) => s.trim()) || [];
 
-          const summaryElement = element.querySelector(".summary, .headnote");
+          const summaryElement = element.querySelector(selectors.summary);
           const summary = summaryElement?.textContent?.trim() || "";
 
           if (caseName && caseName.length > 5) {
@@ -406,14 +405,13 @@ export async function searchHighCourtCases(
         });
 
         return results.slice(0, limit);
-      });
+      }, SELECTORS.HIGH_COURT);
     } finally {
       if (browser) {
         await browser.close();
       }
     }
   } catch (error) {
-    console.error("Error searching High Court cases:", error);
     return [];
   }
 }
