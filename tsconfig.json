@@ -16,10 +16,6 @@
     "sourceMap": true,
     "resolveJsonModule": true
   },
-  "include": [
-    "src/us-legal-apis.ts",
-    "src/simple-server.ts",
-    "src/test-api.ts"
-  ],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
