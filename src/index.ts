@@ -9,4 +9,6 @@ console.log("- MCP SDK installation");
 console.log("- US Legal API implementations");
 console.log("- API keys for Congress.gov, Regulations.gov, etc.");
 console.log("");
-console.log("For a working implementation, see the previous commits with the complete US Legal API integration.");
+console.log(
+  "For a working implementation, see the previous commits with the complete US Legal API integration.",
+);

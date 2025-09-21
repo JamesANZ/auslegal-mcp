@@ -138,43 +138,6 @@ Get information about available data sources
 3. Get your API key
 4. Set `REGULATIONS_GOV_API_KEY` environment variable
 
-## 📈 Why US Legal APIs are Superior
-
-### ✅ **Comprehensive Coverage**
-
-- Federal legislation (Congress)
-- Federal regulations (Federal Register)
-- Federal statutes (US Code)
-- Public input (Regulations.gov)
-
-### ✅ **Real-Time Data**
-
-- Live updates from government sources
-- No scraping required
-- Official APIs maintained by government
-
-### ✅ **Developer-Friendly**
-
-- REST APIs with JSON responses
-- Good documentation
-- Generous rate limits
-- No complex authentication
-
-### ✅ **Historical Data**
-
-- Access to historical legislation
-- Version tracking
-- Complete legislative history
-
-## 🆚 Comparison with Other Countries
-
-| Country              | APIs Available | Coverage      | Developer Support | Real-Time |
-| -------------------- | -------------- | ------------- | ----------------- | --------- |
-| **🇺🇸 United States** | ✅ Multiple    | Comprehensive | Excellent         | ✅ Yes    |
-| 🇬🇧 United Kingdom    | ❌ Limited     | Basic         | Poor              | ❌ No     |
-| 🇨🇦 Canada            | ❌ Limited     | Basic         | Poor              | ❌ No     |
-| 🇦🇺 Australia         | ❌ Limited     | Basic         | Poor              | ❌ No     |
-
 ## 🎯 Example Usage
 
 ### Search for Immigration Bills
@@ -214,26 +177,6 @@ Get information about available data sources
 }
 ```
 
-## 🔧 Development
-
-### Building
-
-```bash
-npm run build
-```
-
-### Development Mode
-
-```bash
-npm run dev
-```
-
-### Testing
-
-```bash
-npm test
-```
-
 ## 📝 License
 
 MIT License - see LICENSE file for details.
@@ -241,15 +184,3 @@ MIT License - see LICENSE file for details.
 ## 🤝 Contributing
 
 Contributions welcome! Please read the contributing guidelines and submit pull requests.
-
-## 📞 Support
-
-For issues and questions:
-
-- Create an issue on GitHub
-- Check the documentation
-- Review API documentation for each source
-
----
-
-**🇺🇸 The United States has the most comprehensive and accessible legal APIs among major Western countries, making it the ideal choice for legal data integration.**
