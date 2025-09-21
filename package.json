@@ -5,11 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/simple-server.js",
-    "dev": "tsx src/simple-server.ts",
-    "test": "node dist/test-api.js",
-    "test-api": "tsx src/test-api.ts"
+    "build": "tsc"
   },
   "keywords": [
     "mcp",
