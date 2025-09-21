@@ -3,12 +3,17 @@
 // Note: MCP SDK imports will be resolved at runtime
 // For now, we'll create a simple test version
 import { z } from "zod";
-import USLegalAPI, { CongressBill, FederalRegisterDocument, USCodeSection, RegulationComment } from "./us-legal-apis.js";
+import USLegalAPI, {
+  CongressBill,
+  FederalRegisterDocument,
+  USCodeSection,
+  RegulationComment,
+} from "./us-legal-apis.js";
 
 // Initialize US Legal API
 const usLegalAPI = new USLegalAPI({
   congress: process.env.CONGRESS_API_KEY,
-  regulationsGov: process.env.REGULATIONS_GOV_API_KEY
+  regulationsGov: process.env.REGULATIONS_GOV_API_KEY,
 });
 
 const server = new McpServer({
@@ -27,7 +32,9 @@ server.tool(
   {
     query: z
       .string()
-      .describe("Search query for bills (e.g., 'immigration', 'healthcare', 'infrastructure')"),
+      .describe(
+        "Search query for bills (e.g., 'immigration', 'healthcare', 'infrastructure')",
+      ),
     congress: z
       .number()
       .int()
@@ -44,9 +51,21 @@ server.tool(
       .default(20)
       .describe("Number of results to return (max 50)"),
   },
-  async ({ query, congress, limit }: { query: string; congress?: number; limit?: number }) => {
+  async ({
+    query,
+    congress,
+    limit,
+  }: {
+    query: string;
+    congress?: number;
+    limit?: number;
+  }) => {
     try {
-      const bills = await usLegalAPI.congress.searchBills(query, congress, limit);
+      const bills = await usLegalAPI.congress.searchBills(
+        query,
+        congress,
+        limit,
+      );
 
       if (bills.length === 0) {
         return {
@@ -114,7 +133,9 @@ server.tool(
   {
     query: z
       .string()
-      .describe("Search query for Federal Register documents (e.g., 'immigration', 'environmental protection', 'healthcare')"),
+      .describe(
+        "Search query for Federal Register documents (e.g., 'immigration', 'environmental protection', 'healthcare')",
+      ),
     limit: z
       .number()
       .int()
@@ -126,7 +147,10 @@ server.tool(
   },
   async ({ query, limit }: { query: string; limit?: number }) => {
     try {
-      const documents = await usLegalAPI.federalRegister.searchDocuments(query, limit);
+      const documents = await usLegalAPI.federalRegister.searchDocuments(
+        query,
+        limit,
+      );
 
       if (documents.length === 0) {
         return {
@@ -188,7 +212,9 @@ server.tool(
   {
     query: z
       .string()
-      .describe("Search query for US Code sections (e.g., 'immigration', 'tax', 'criminal')"),
+      .describe(
+        "Search query for US Code sections (e.g., 'immigration', 'tax', 'criminal')",
+      ),
     title: z
       .number()
       .int()
@@ -205,7 +231,15 @@ server.tool(
       .default(20)
       .describe("Number of results to return (max 50)"),
   },
-  async ({ query, title, limit }: { query: string; title?: number; limit?: number }) => {
+  async ({
+    query,
+    title,
+    limit,
+  }: {
+    query: string;
+    title?: number;
+    limit?: number;
+  }) => {
     try {
       const sections = await usLegalAPI.usCode.searchCode(query, title, limit);
 
@@ -259,7 +293,9 @@ server.tool(
   {
     query: z
       .string()
-      .describe("Search query for public comments (e.g., 'environmental', 'healthcare', 'immigration')"),
+      .describe(
+        "Search query for public comments (e.g., 'environmental', 'healthcare', 'immigration')",
+      ),
     limit: z
       .number()
       .int()
@@ -271,7 +307,10 @@ server.tool(
   },
   async ({ query, limit }: { query: string; limit?: number }) => {
     try {
-      const comments = await usLegalAPI.regulations.searchComments(query, limit);
+      const comments = await usLegalAPI.regulations.searchComments(
+        query,
+        limit,
+      );
 
       if (comments.length === 0) {
         return {
@@ -327,9 +366,7 @@ server.tool(
   "search-us-legal",
   "Comprehensive search across all US legal sources (Congress, Federal Register, US Code, Comments)",
   {
-    query: z
-      .string()
-      .describe("Search query across all US legal sources"),
+    query: z.string().describe("Search query across all US legal sources"),
     limit: z
       .number()
       .int()
@@ -344,7 +381,7 @@ server.tool(
       const results = await usLegalAPI.searchAll(query, limit);
 
       let result = `**Comprehensive US Legal Search Results for "${query}"**\n\n`;
-      
+
       // Congress Bills
       if (results.bills.length > 0) {
         result += `## 📜 Congress Bills (${results.bills.length})\n\n`;
@@ -383,8 +420,12 @@ server.tool(
         });
       }
 
-      if (results.bills.length === 0 && results.regulations.length === 0 && 
-          results.codeSections.length === 0 && results.comments.length === 0) {
+      if (
+        results.bills.length === 0 &&
+        results.regulations.length === 0 &&
+        results.codeSections.length === 0 &&
+        results.comments.length === 0
+      ) {
         result += `No results found for "${query}" across any US legal sources.`;
       }
 
@@ -495,7 +536,8 @@ server.tool(
   },
   async ({ limit }: { limit?: number }) => {
     try {
-      const documents = await usLegalAPI.federalRegister.getRecentDocuments(limit);
+      const documents =
+        await usLegalAPI.federalRegister.getRecentDocuments(limit);
 
       if (documents.length === 0) {
         return {
@@ -550,29 +592,51 @@ server.tool(
   async () => {
     const sources = {
       "Congress.gov": {
-        description: "Bills, resolutions, voting records, and legislative information",
+        description:
+          "Bills, resolutions, voting records, and legislative information",
         api: "https://api.congress.gov/v3",
-        features: ["Bills", "Resolutions", "Voting Records", "Member Information", "Committee Data"],
-        authentication: "API Key recommended (free tier available)"
+        features: [
+          "Bills",
+          "Resolutions",
+          "Voting Records",
+          "Member Information",
+          "Committee Data",
+        ],
+        authentication: "API Key recommended (free tier available)",
       },
       "Federal Register": {
-        description: "Federal regulations, executive orders, and agency documents",
+        description:
+          "Federal regulations, executive orders, and agency documents",
         api: "https://www.federalregister.gov/api/v1",
-        features: ["Regulations", "Executive Orders", "Agency Documents", "Public Comments"],
-        authentication: "None required"
+        features: [
+          "Regulations",
+          "Executive Orders",
+          "Agency Documents",
+          "Public Comments",
+        ],
+        authentication: "None required",
       },
       "US Code": {
         description: "Federal statutes and laws",
         api: "https://uscode.house.gov/api",
-        features: ["Federal Statutes", "Title Search", "Section Search", "Historical Versions"],
-        authentication: "None required"
+        features: [
+          "Federal Statutes",
+          "Title Search",
+          "Section Search",
+          "Historical Versions",
+        ],
+        authentication: "None required",
       },
       "Regulations.gov": {
         description: "Public comments on proposed regulations",
         api: "https://api.regulations.gov/v4",
-        features: ["Public Comments", "Rulemaking Documents", "Agency Information"],
-        authentication: "API Key required"
-      }
+        features: [
+          "Public Comments",
+          "Rulemaking Documents",
+          "Agency Information",
+        ],
+        authentication: "API Key required",
+      },
     };
 
     let result = `**Available US Legal Data Sources**\n\n`;
