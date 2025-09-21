@@ -1,38 +1,35 @@
 {
-  "name": "legal-mcp",
+  "name": "us-legal-mcp",
   "version": "1.0.0",
+  "description": "MCP server for US legal data - Congress, Federal Register, US Code, and more",
   "type": "module",
-  "bin": {
-    "legal-mcp": "./build/index.js"
-  },
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && chmod 755 build/index.js"
+    "build": "tsc",
+    "start": "node dist/simple-server.js",
+    "dev": "tsx src/simple-server.ts",
+    "test": "node dist/test-api.js",
+    "test-api": "tsx src/test-api.ts"
   },
-  "files": [
-    "build"
-  ],
-  "main": "index.js",
   "keywords": [
+    "mcp",
     "legal",
-    "australia",
-    "law",
-    "legislation",
-    "case-law",
-    "legal-research",
-    "mcp"
+    "us",
+    "congress",
+    "federal-register",
+    "us-code",
+    "legislation"
   ],
-  "author": "",
-  "license": "ISC",
-  "description": "A Model Context Protocol (MCP) server that provides comprehensive Australian legal information by querying multiple authoritative legal databases including AustLII, Federal Register of Legislation, and state legal databases.",
+  "author": "Legal MCP Team",
+  "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.0",
-    "puppeteer": "^24.12.1",
-    "superagent": "^10.2.2",
-    "zod": "^3.25.75"
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "zod": "^3.22.4",
+    "axios": "^1.6.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.10",
-    "@types/superagent": "^8.1.9",
-    "typescript": "^5.8.3"
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
   }
 }

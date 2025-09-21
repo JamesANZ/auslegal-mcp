@@ -1,99 +1,223 @@
-# Legal MCP - Australian Legal Research Server
+# 🇺🇸 US Legal MCP Server
 
-A Model Context Protocol (MCP) server that provides comprehensive Australian legal information by querying multiple authoritative legal databases including AustLII, Federal Register of Legislation, and state legal databases.
+A comprehensive Model Context Protocol (MCP) server for US legal data, providing access to Congress bills, Federal Register documents, US Code sections, and public comments on regulations.
 
-## Features
+## ✨ Features
 
-- **AustLII Search**: Search across all Australian legal materials including legislation, case law, and secondary materials
-- **Federal Legislation**: Search Commonwealth Acts, Regulations, and legislative instruments
-- **State Legislation**: Search legislation from all Australian states and territories
-- **High Court Cases**: Search High Court of Australia judgments and decisions
-- **Multi-Jurisdiction Search**: Comprehensive search across multiple Australian legal databases
-- **Legal Database Information**: Get details about available legal databases and their jurisdictions
+### 📜 **Congress.gov Integration**
+- Search bills and resolutions
+- Get recent legislation
+- Access voting records and member information
+- Real-time legislative data
 
-## Available Tools
+### 📋 **Federal Register Integration**
+- Search regulations and executive orders
+- Get recent agency documents
+- Access public comments
+- Full document text and metadata
 
-### 1. `search-austlii`
+### ⚖️ **US Code Integration**
+- Search federal statutes
+- Browse by title and section
+- Historical versions
+- Complete legal text
 
-Search AustLII (Australasian Legal Information Institute) for Australian legal materials.
+### 💬 **Regulations.gov Integration**
+- Search public comments
+- Access rulemaking documents
+- Agency information
+- Public input on regulations
 
-- **Query**: Legal search terms (e.g., "criminal law", "family law", "contracts")
-- **Jurisdiction**: Optional jurisdiction filter (CTH, NSW, VIC, QLD, WA, SA, TAS, NT, ACT)
-- **Type**: Optional material type filter (Legislation, Case Law, Secondary Material)
+## 🚀 Quick Start
 
-### 2. `search-federal-legislation`
-
-Search the Federal Register of Legislation for Commonwealth legislation.
-
-- **Query**: Legislation search terms (e.g., "Corporations Act", "Income Tax Assessment Act")
-
-### 3. `search-nsw-legislation`
-
-Search New South Wales legislation database.
-
-- **Query**: NSW legislation search terms (e.g., "Crimes Act", "Local Government Act")
-
-### 4. `search-high-court-cases`
-
-Search High Court of Australia cases.
-
-- **Query**: Case search terms (e.g., "Mabo", "Lange", "constitutional law")
-
-### 5. `get-legal-databases`
-
-Get information about available Australian legal databases and their jurisdictions.
-
-### 6. `search-australian-law`
-
-Comprehensive search across multiple Australian legal databases.
-
-- **Query**: Legal search terms
-- **Jurisdictions**: Optional array of specific jurisdictions to search
-- **Limit**: Number of results per jurisdiction
-
-## Legal Databases Covered
-
-- **AustLII**: Australasian Legal Information Institute (free access)
-- **Federal Register of Legislation**: Official Commonwealth legislation source
-- **High Court of Australia**: Official High Court website
-- **State Legislation Databases**: All Australian states and territories
-  - New South Wales
-  - Victoria
-  - Queensland
-  - Western Australia
-  - South Australia
-  - Tasmania
-  - Northern Territory
-  - Australian Capital Territory
-
-## Installation
+### Installation
 
 ```bash
 npm install
 npm run build
 ```
 
-## Usage
-
-The server runs on stdio and can be integrated with MCP-compatible clients.
+### Environment Variables (Optional)
 
 ```bash
-node build/index.js
+# For enhanced Congress.gov access (free tier available)
+export CONGRESS_API_KEY="your_congress_api_key"
+
+# For Regulations.gov access
+export REGULATIONS_GOV_API_KEY="your_regulations_gov_api_key"
 ```
 
-## Data Sources
+### Running the Server
 
-All legal information is sourced from official Australian legal databases and government websites:
+```bash
+npm start
+```
 
-- **AustLII**: Free, authoritative legal information institute
-- **Federal Register of Legislation**: Official Commonwealth legislation database
-- **State Government Websites**: Official state and territory legislation sources
-- **Court Websites**: Official court decision databases
+## 🛠️ Available Tools
 
-## Legal Disclaimer
+### `search-congress-bills`
+Search for bills and resolutions in Congress.gov
+- **Query**: Search terms (e.g., "immigration", "healthcare")
+- **Congress**: Optional Congress number (100-120)
+- **Limit**: Number of results (1-50)
 
-This tool provides access to publicly available legal information from official Australian sources. It is intended for research and educational purposes only. Users should verify all legal information independently and consult qualified legal professionals for legal advice.
+### `search-federal-register`
+Search Federal Register documents (regulations, executive orders)
+- **Query**: Search terms
+- **Limit**: Number of results (1-50)
 
-## License
+### `search-us-code`
+Search US Code sections (federal statutes)
+- **Query**: Search terms
+- **Title**: Optional title number (1-54)
+- **Limit**: Number of results (1-50)
 
-ISC License
+### `search-public-comments`
+Search public comments on regulations
+- **Query**: Search terms
+- **Limit**: Number of results (1-50)
+
+### `search-us-legal`
+Comprehensive search across all sources
+- **Query**: Search terms
+- **Limit**: Results per source (1-50)
+
+### `get-recent-bills`
+Get recently introduced bills
+- **Congress**: Optional Congress number
+- **Limit**: Number of results (1-50)
+
+### `get-recent-regulations`
+Get recently published Federal Register documents
+- **Limit**: Number of results (1-50)
+
+### `get-legal-sources`
+Get information about available data sources
+
+## 📊 Data Sources
+
+| Source | Description | API | Auth Required |
+|--------|-------------|-----|---------------|
+| **Congress.gov** | Bills, resolutions, voting records | https://api.congress.gov/v3 | Optional |
+| **Federal Register** | Regulations, executive orders | https://www.federalregister.gov/api/v1 | No |
+| **US Code** | Federal statutes | https://uscode.house.gov/api | No |
+| **Regulations.gov** | Public comments | https://api.regulations.gov/v4 | Yes |
+
+## 🔑 API Keys
+
+### Congress.gov API Key (Optional)
+1. Visit [https://api.congress.gov/](https://api.congress.gov/)
+2. Sign up for a free account
+3. Get your API key
+4. Set `CONGRESS_API_KEY` environment variable
+
+### Regulations.gov API Key (Optional)
+1. Visit [https://api.regulations.gov/](https://api.regulations.gov/)
+2. Sign up for an account
+3. Get your API key
+4. Set `REGULATIONS_GOV_API_KEY` environment variable
+
+## 📈 Why US Legal APIs are Superior
+
+### ✅ **Comprehensive Coverage**
+- Federal legislation (Congress)
+- Federal regulations (Federal Register)
+- Federal statutes (US Code)
+- Public input (Regulations.gov)
+
+### ✅ **Real-Time Data**
+- Live updates from government sources
+- No scraping required
+- Official APIs maintained by government
+
+### ✅ **Developer-Friendly**
+- REST APIs with JSON responses
+- Good documentation
+- Generous rate limits
+- No complex authentication
+
+### ✅ **Historical Data**
+- Access to historical legislation
+- Version tracking
+- Complete legislative history
+
+## 🆚 Comparison with Other Countries
+
+| Country | APIs Available | Coverage | Developer Support | Real-Time |
+|---------|----------------|----------|-------------------|-----------|
+| **🇺🇸 United States** | ✅ Multiple | Comprehensive | Excellent | ✅ Yes |
+| 🇬🇧 United Kingdom | ❌ Limited | Basic | Poor | ❌ No |
+| 🇨🇦 Canada | ❌ Limited | Basic | Poor | ❌ No |
+| 🇦🇺 Australia | ❌ Limited | Basic | Poor | ❌ No |
+
+## 🎯 Example Usage
+
+### Search for Immigration Bills
+```json
+{
+  "tool": "search-congress-bills",
+  "arguments": {
+    "query": "immigration",
+    "congress": 118,
+    "limit": 10
+  }
+}
+```
+
+### Search Federal Regulations
+```json
+{
+  "tool": "search-federal-register",
+  "arguments": {
+    "query": "environmental protection",
+    "limit": 5
+  }
+}
+```
+
+### Comprehensive Legal Search
+```json
+{
+  "tool": "search-us-legal",
+  "arguments": {
+    "query": "healthcare",
+    "limit": 20
+  }
+}
+```
+
+## 🔧 Development
+
+### Building
+```bash
+npm run build
+```
+
+### Development Mode
+```bash
+npm run dev
+```
+
+### Testing
+```bash
+npm test
+```
+
+## 📝 License
+
+MIT License - see LICENSE file for details.
+
+## 🤝 Contributing
+
+Contributions welcome! Please read the contributing guidelines and submit pull requests.
+
+## 📞 Support
+
+For issues and questions:
+- Create an issue on GitHub
+- Check the documentation
+- Review API documentation for each source
+
+---
+
+**🇺🇸 The United States has the most comprehensive and accessible legal APIs among major Western countries, making it the ideal choice for legal data integration.**
